@@ -1,0 +1,6 @@
+# Configuration du serveur
+PORT=9002
+NODE_ENV=development
+
+# Configuration PostgreSQL pour Prisma
+DATABASE_URL="postgresql://postgres:password@localhost:5432/microservices_db?schema=public" 
