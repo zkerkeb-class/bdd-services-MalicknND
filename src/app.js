@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const imageRoutes = require("./routes/imageRoutes-prisma");
+const productRoutes = require("./routes/productRoutes-prisma");
 
 const app = express();
 const port = process.env.PORT || 9002;
@@ -12,6 +13,7 @@ app.use(express.json());
 
 // Routes
 app.use("/api/images", imageRoutes);
+app.use("/api/products", productRoutes);
 
 app.get("/", (req, res) => {
   res.json({

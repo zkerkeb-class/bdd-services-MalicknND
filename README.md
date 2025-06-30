@@ -2,7 +2,7 @@
 
 ## 📋 Description
 
-Service de base de données centralisée utilisant **PostgreSQL** avec **Prisma ORM** pour gérer les métadonnées des images générées par IA. Ce service fait partie de l'architecture microservices et centralise toutes les données de l'application.
+Service de base de données centralisée utilisant **PostgreSQL** avec **Prisma ORM** pour gérer les métadonnées des images générées par IA et les produits Printify. Ce service fait partie de l'architecture microservices et centralise toutes les données de l'application.
 
 ## 🏗️ Architecture
 
@@ -34,9 +34,48 @@ model Image {
 - `imageUrl` : URL de l'image stockée dans Supabase
 - `createdAt` : Date de création
 
+### Table `products` (Nouveau)
+
+```sql
+model Product {
+    id                String   @id @default(cuid())
+    userId            String   @map("user_id") @db.Uuid
+    printifyId        String   @map("printify_id")
+    title             String
+    description       String?
+    blueprintId       Int      @map("blueprint_id")
+    printProviderId   Int      @map("print_provider_id")
+    marginApplied     Int      @map("margin_applied")
+    originalImageUrl  String   @map("original_image_url")
+    printifyImageId   String   @map("printify_image_id")
+    createdAt         DateTime @default(now()) @map("created_at")
+    
+    // Relations
+    variants          ProductVariant[]
+    images            ProductImage[]
+
+    @@map("products")
+}
+```
+
+**Champs :**
+- `id` : Identifiant unique (CUID)
+- `userId` : ID de l'utilisateur (UUID converti depuis Clerk)
+- `printifyId` : ID du produit dans Printify
+- `title` : Titre du produit
+- `description` : Description du produit (optionnel)
+- `blueprintId` : ID du blueprint Printify
+- `printProviderId` : ID du fournisseur d'impression
+- `marginApplied` : Marge appliquée
+- `originalImageUrl` : URL de l'image originale
+- `printifyImageId` : ID de l'image Printify
+- `createdAt` : Date de création
+
 ## 🚀 API Endpoints
 
-### POST `/api/images`
+### Images
+
+#### POST `/api/images`
 **Créer une nouvelle image**
 
 ```json
@@ -62,7 +101,7 @@ model Image {
 }
 ```
 
-### GET `/api/images?userId=...`
+#### GET `/api/images?userId=...`
 **Récupérer les images d'un utilisateur**
 
 **Paramètres :**
@@ -86,19 +125,57 @@ model Image {
 }
 ```
 
-### GET `/api/images/:id`
+#### GET `/api/images/:id`
 **Récupérer une image par ID**
 
 **Paramètres :**
 - `id` : ID de l'image
 - `userId` : ID de l'utilisateur (optionnel, pour vérification)
 
-### DELETE `/api/images/:id`
+#### DELETE `/api/images/:id`
 **Supprimer une image**
 
 **Paramètres :**
 - `id` : ID de l'image
 - `userId` : ID de l'utilisateur (optionnel, pour vérification)
+
+### Produits (Nouveau)
+
+#### POST `/api/products`
+**Créer un nouveau produit Printify**
+
+```json
+{
+  "userId": "user_2ta6NRH0kZxG51Gcn6gCaVzJQPe",
+  "printifyId": "6862a2e379a2a4e66f05b610",
+  "title": "T-shirt IA Génial",
+  "description": "Un t-shirt avec une image générée par IA",
+  "blueprintId": 5,
+  "printProviderId": 1,
+  "marginApplied": 40,
+  "originalImageUrl": "https://cdn.pixabay.com/photo/2023/05/08/22/00/tshirt-7979854_1280.jpg",
+  "printifyImageId": "6861b339b9939664017b3ee1",
+  "variants": [...],
+  "images": [...]
+}
+```
+
+#### GET `/api/products?userId=...`
+**Récupérer les produits d'un utilisateur**
+
+**Paramètres :**
+- `userId` : ID de l'utilisateur (requis)
+- `page` : Numéro de page (défaut: 1)
+- `limit` : Nombre de produits par page (défaut: 10)
+
+#### GET `/api/products/:id`
+**Récupérer un produit par ID**
+
+#### PUT `/api/products/:id`
+**Mettre à jour un produit**
+
+#### DELETE `/api/products/:id`
+**Supprimer un produit**
 
 ### GET `/api/health`
 **Vérifier la santé du service**
@@ -129,6 +206,10 @@ npm run db:generate    # Générer le client Prisma
 npm run db:push        # Pousser le schéma vers la DB
 npm run db:migrate     # Créer et appliquer une migration
 npm run db:studio      # Ouvrir Prisma Studio
+
+# Tests
+node test-prisma.js    # Tester l'API des images
+node test-products.js  # Tester l'API des produits
 ```
 
 ## 🔐 Sécurité
@@ -153,32 +234,41 @@ function clerkIdToUUID(clerkId) {
 ### Services connectés
 - **Service IA** : Envoie les métadonnées des images générées
 - **Service Images** : Récupère et gère les métadonnées
-- **Frontend** : Consulte l'historique des images
+- **Service Printify** : Envoie les métadonnées des produits créés
+- **Frontend** : Consulte l'historique des images et produits
 
-### Workflow
+### Workflow Images
 1. Service IA génère une image
 2. Service Images upload vers Supabase
 3. Service Images enregistre les métadonnées dans ce service BDD
 4. Frontend peut consulter l'historique
+
+### Workflow Produits (Nouveau)
+1. Service Printify crée un produit
+2. Service BDD enregistre les métadonnées du produit
+3. Frontend peut consulter les produits par utilisateur
 
 ## 🐛 Débogage
 
 ### Logs
 Le service utilise des logs détaillés :
 - `📥 Données reçues:` - Données entrantes
+- `📥 Données produit reçues:` - Données produit entrantes
 - `🔄 Conversion ID:` - Conversion UUID
 - `✅ Validation OK` - Validation réussie
+- `✅ Produit créé avec succès` - Création produit réussie
 - `❌ Erreur` - Erreurs avec stack trace
 
 ### Erreurs courantes
 - **400** : Champs manquants ou invalides
-- **404** : Image non trouvée
+- **404** : Image/Produit non trouvé
 - **500** : Erreur interne (voir logs)
 
 ## 📈 Performance
 
 - **Indexation** : Index automatiques sur `userId` et `createdAt`
 - **Pagination** : Support natif pour les grandes listes
+- **Relations** : Chargement optimisé avec `include`
 - **Connexions** : Pool de connexions Prisma optimisé
 
 ## 🔄 Migrations
@@ -198,4 +288,9 @@ npx prisma migrate deploy
 - Le service est conçu pour être stateless
 - Pas d'authentification directe (gérée par les services appelants)
 - Compatible avec les policies RLS de Supabase
-- Support complet des transactions Prisma 
+- Support complet des transactions Prisma
+- Relations automatiques entre produits, variants et images
+
+## 📚 Documentation supplémentaire
+
+- [Guide des produits](PRODUCTS-GUIDE.md) - Guide détaillé pour l'API des produits 

@@ -2,20 +2,90 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Image {
-    id        String   @id @default(cuid())
-    userId    String   @map("user_id") @db.Uuid
-    prompt    String
-    imageUrl  String   @map("image_url")
-    createdAt DateTime @default(now()) @map("created_at")
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id") @db.Uuid
+  prompt    String
+  imageUrl  String   @map("image_url")
+  createdAt DateTime @default(now()) @map("created_at")
 
-    @@map("images")
+  @@map("images")
+}
+
+model Product {
+  id               String   @id @default(cuid())
+  userId           String   @map("user_id") @db.Uuid
+  printifyId       String   @map("printify_id")
+  title            String
+  description      String?
+  blueprintId      Int      @map("blueprint_id")
+  printProviderId  Int      @map("print_provider_id")
+  marginApplied    Int      @map("margin_applied")
+  originalImageUrl String   @map("original_image_url")
+  printifyImageId  String   @map("printify_image_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Relations
+  variants ProductVariant[]
+  images   ProductImage[]
+
+  @@map("products")
+}
+
+model ProductVariant {
+  id                String   @id @default(cuid())
+  productId         String   @map("product_id")
+  printifyVariantId Int      @map("printify_variant_id")
+  title             String
+  sku               String
+  price             Int
+  priceFormatted    String   @map("price_formatted")
+  cost              Int
+  profit            Int
+  isEnabled         Boolean  @map("is_enabled")
+  isDefault         Boolean  @map("is_default")
+  options           Int[]
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_variants")
+}
+
+model ProductImage {
+  id                      String   @id @default(cuid())
+  productId               String   @map("product_id")
+  src                     String
+  position                String
+  isDefault               Boolean  @map("is_default")
+  isSelectedForPublishing Boolean  @map("is_selected_for_publishing")
+  order                   Int?
+  createdAt               DateTime @default(now()) @map("created_at")
+
+  // Relations
+  product    Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantIds ProductImageVariant[]
+
+  @@map("product_images")
+}
+
+model ProductImageVariant {
+  id        String   @id @default(cuid())
+  imageId   String   @map("image_id")
+  variantId Int      @map("variant_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  image ProductImage @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  @@map("product_image_variants")
 }
