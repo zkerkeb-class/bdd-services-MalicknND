@@ -16,7 +16,7 @@
         "db:studio": "prisma studio"
     },
     "dependencies": {
-        "@prisma/client": "^6.9.0",
+        "@prisma/client": "^6.11.1",
         "axios": "^1.10.0",
         "cors": "^2.8.5",
         "dotenv": "^16.4.7",
@@ -24,6 +24,6 @@
     },
     "devDependencies": {
         "nodemon": "^3.1.9",
-        "prisma": "^6.9.0"
+        "prisma": "^6.11.1"
     }
 }
